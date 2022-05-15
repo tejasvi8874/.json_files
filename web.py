@@ -431,20 +431,24 @@ if submit:
                     break
 
             if detailed:
-                if st.button(label="FASTA", key=operon_num):
-                    get_fasta = lambda direction: curl_output(
-                        'https://patricbrc.org/api/genome_feature/?http_accept=application/dna+fasta',
-                        '--data-raw',
-                        'rql='+ quote_plus(
-                            'in(feature_id%2C(' + 
-                            '%2C'.join(f"PATRIC.{genome_id}.{sequence_accession_id}.CDS.{gene_locations[pid].start}.{gene_locations[pid].end}.{direction}" for pid in dfx.index) +
-                            '))%26sort(%2Bfeature_id)%26limit(25000)'
-                            )
-                        ).decode()
-                    fasta = get_fasta('fwd') or get_fasta('rev')
-                    st.download_button(label='Download', file_name=f'{genome_id}-operon-{operon_num}.fasta', key=operon_num, data=fasta)
-                    line_count = fasta.count('\n')+5
-                    components.html(f"<textarea readonly rows={line_count} style='width:100%'>{fasta}</textarea>", height=600, scrolling=True)
+                c1, c2, _ = st.columns([0.1,0.2, 0.7])
+                for c, label in zip((c1, c2), ('DNA', 'Protein')):
+                    with c:
+                        render = st.button(label=label, key=operon_num)
+                    if render:
+                        get_fasta = lambda direction: curl_output(
+                            f'https://patricbrc.org/api/genome_feature/?http_accept=application/{label.lower()}+fasta',
+                            '--data-raw',
+                            'rql='+ quote_plus(
+                                'in(feature_id%2C(' + 
+                                '%2C'.join(f"PATRIC.{genome_id}.{sequence_accession_id}.CDS.{gene_locations[pid].start}.{gene_locations[pid].end}.{direction}" for pid in dfx.index) +
+                                '))%26sort(%2Bfeature_id)%26limit(25000)'
+                                )
+                            ).decode()
+                        fasta = get_fasta('fwd') or get_fasta('rev')
+                        line_count = fasta.count('\n')+5
+                        st.download_button(label='📥', file_name=f'{genome_id}-operon-{operon_num+1}.fasta', key=operon_num, data=fasta)
+                        components.html(f"<textarea readonly rows={line_count} style='width:100%'>{fasta}</textarea>", height=600, scrolling=True)
     else:
         st.error(f"No matching clusters found")
 
